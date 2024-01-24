@@ -2,7 +2,11 @@ from sqlalchemy import create_engine, Column, Integer, String, Numeric, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy  import func
+from arcgis.gis import GIS
 import pandas as pd
+
+#arcpy.env.timeZone = "E._South_America_Standard_Time"
+
 Base = declarative_base()
 class MgnMpio(Base):
     __tablename__ = 'mgn_mpio_politico'
@@ -36,7 +40,7 @@ class MunicipiosPdet(Base):
     municipio = Column(String)
     pdets = relationship("MgnMpio", back_populates="mpio_pdet")
 class CombinadoHistPobl(Base):
-    __tablename__ = 'combinado_hist_pobl'
+    __tablename__ = 'poblacion_dane_no_oficial'
     __table_args__ = {'schema': 'poblacion'}
     
     dp = Column(String)
@@ -579,5 +583,28 @@ arcpy.AddMessage(df_resultados_policia.columns)
 
 df_resultados_policia.to_sql(name='HOMICIDIOS_Variables_POLICIA', con=engine, if_exists='replace', index=False, schema='siedco')
 
+"""arcpy.management.DeleteRows(
+    in_rows="https://geoapps.esri.co/server/rest/services/Hosted/HOMICIDIOS_Variables_POLICIA2/FeatureServer/0"
+)"""
+#gis = GIS(url='https://geoapps.esri.co/portal/home', username='ag_geekportal', password='Esrico2024*')
+#itemId = '5e036d82e8b846889e51d74dbd59b73a'
+#item =gis.content.search(itemId)[0]
+#arcpy.AddMessage(item)
+
+
+# Obtener la capa (layer) del elemento (item)
+#layer = item.layers[0]
+
+# Obtener la tabla como un DataFrame de Pandas
+#data_frame = pd.DataFrame.spatial.from_layer(layer)
+
+# Imprimir la tabla
+#arcpy.AddMessage(data_frame)
+
+#fl=fs.layers[0]
+#arcpy.AddMessage(fl)
+
+
+#df_resultados_policia.to_featureset()
 
 session.close()
