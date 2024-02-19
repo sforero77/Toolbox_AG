@@ -583,28 +583,86 @@ arcpy.AddMessage(df_resultados_policia.columns)
 
 df_resultados_policia.to_sql(name='HOMICIDIOS_Variables_POLICIA', con=engine, if_exists='replace', index=False, schema='siedco')
 
-"""arcpy.management.DeleteRows(
+arcpy.management.DeleteRows(
     in_rows="https://geoapps.esri.co/server/rest/services/Hosted/HOMICIDIOS_Variables_POLICIA2/FeatureServer/0"
-)"""
-#gis = GIS(url='https://geoapps.esri.co/portal/home', username='ag_geekportal', password='Esrico2024*')
-#itemId = '5e036d82e8b846889e51d74dbd59b73a'
-#item =gis.content.search(itemId)[0]
-#arcpy.AddMessage(item)
+)
+
+# Define el URL del feature service
+target_fc = 'https://geoapps.esri.co/server/rest/services/Hosted/HOMICIDIOS_Variables_POLICIA2/FeatureServer/0'
+
+# Describe el feature class
+dsc = arcpy.Describe(target_fc)
+fields = dsc.fields
+fieldnames = [field.name for field in fields]
+arcpy.AddMessage(fieldnames)
 
 
-# Obtener la capa (layer) del elemento (item)
-#layer = item.layers[0]
+# Convierte las fechas a formato datetime y ajusta la zona horaria
+df_resultados_policia['fecha_hecho'] = pd.to_datetime(df_resultados_policia['fecha_hecho'], errors='coerce')
+df_resultados_policia['fecha_hecho'] += pd.Timedelta(hours=6)
+arcpy.AddMessage(df_resultados_policia['fecha_hecho'])
+# Define el nuevo orden de las columnas
+nuevo_orden_columnas = ['departamento', 'municipio', 'armas_medios', 'genero', 
+                        'f_agrupa_edad_persona', 'cantidad', 'primeros_5_dane', 'ano_fecha_hecho', 
+                        'dia', 'mes', 'numero_semana', 'nombre_mes', 'nombre_dia_semana', 'DepMun', 
+                        'NumMes', 'MesAno', 'fecha_hecho']
 
-# Obtener la tabla como un DataFrame de Pandas
-#data_frame = pd.DataFrame.spatial.from_layer(layer)
-
-# Imprimir la tabla
-#arcpy.AddMessage(data_frame)
-
-#fl=fs.layers[0]
-#arcpy.AddMessage(fl)
+# Reorganiza las columnas del DataFrame
+df_resultados_policia = df_resultados_policia[nuevo_orden_columnas]
 
 
-#df_resultados_policia.to_featureset()
+# Convierte el DataFrame a una lista de tuplas
+lista_de_tuplas = [tuple(row) for row in df_resultados_policia.itertuples(index=True, name=None)]
+#lista_de_tuplas = [tuple(row) for row in df_resultados_policia.head(300).itertuples(index=True, name=None)]
+
+#arcpy.AddMessage(lista_de_tuplas[0])
+
+# Función para insertar filas con reintento
+def insert_rows_with_retry(cursor, data):
+    last_successful_row = None
+
+    try:
+        for row in data:
+            cursor.insertRow(row)
+            #arcpy.AddMessage(insert)
+            last_successful_row = row
+
+    except arcpy.ExecuteError as e:
+        arcpy.AddMessage(f"Error during insertion: {e}")
+        arcpy.AddMessage(arcpy.GetMessages())
+
+    except Exception as e:
+        arcpy.AddMessage(f"Unexpected error: {e}")
+
+
+    return last_successful_row
+
+# Inserta filas con reintento
+while len(lista_de_tuplas):
+    # Abre un InsertCursor usando un context manager
+    with arcpy.da.InsertCursor(target_fc, fieldnames) as cursor:
+        try:
+            # Intenta insertar todas las filas
+            last_successful_row = insert_rows_with_retry(cursor, lista_de_tuplas)
+            #arcpy.AddMessage(last_successful_row)
+
+            # Encuentra el índice de la última fila insertada correctamente
+            index_last_successful = lista_de_tuplas.index(last_successful_row)
+
+            # Elimina las filas insertadas correctamente de la lista
+            lista_de_tuplas = lista_de_tuplas[index_last_successful + 2:]
+            #arcpy.AddMessage(len(lista_de_tuplas))
+
+            #if not lista_de_tuplas:
+            #    arcpy.AddMessage('NOT LISTA TUPLAS')
+            #    break
+
+        except Exception as e:
+            arcpy.AddMessage(f"Error during batch insertion: {e}")
+            # Rompe el bucle en caso de un error no manejado
+            break
+
+arcpy.AddMessage('TERMINO')
 
 session.close()
+
