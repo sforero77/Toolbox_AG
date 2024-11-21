@@ -337,15 +337,15 @@ class MunicipiosCategoria(Base):
     
 # Configurar la conexión a la base de datos PostgreSQL (cambia la URL según tu configuración)
 # Formato: postgresql://usuario:contraseña@localhost:puerto/nombre_de_la_base_de_datos
-engine = create_engine('postgresql://postgres:postgres@localhost:5432/AG')
+engine = create_engine('postgresql://postgres:postgres@186.31.192.90:5432/AG_SEBAS')
 # Crear una sesión para interactuar con la base de datos
 Session = sessionmaker(bind=engine)
 session = Session()
-"""
+arcpy.AddMessage(f"""
 ===========================================
 CTP NACIONAL
 ===========================================
-"""
+""")
 # Subconsulta para CombinadoHistPolicia: Agrupar por año y sumar la cantidad
 subconsulta_policia = (
     session.query(
@@ -394,11 +394,11 @@ arcpy.AddMessage(df_resultados)
 arcpy.AddMessage(df_resultados.columns)
 # Subir el DataFrame df_resultados a la base de datos
 df_resultados.to_sql(name='CTP_POLICIA', con=engine, if_exists='replace', index=False, schema='siedco')
-"""
+arcpy.AddMessage(f"""
 ===========================================
 TCP DEPARTAMENTO
 ===========================================
-"""
+""")
 # Subconsulta para CombinadoHistPolicia: Agrupar por año y primeros_5_dane, y sumar la cantidad
 subconsulta_policia_dept = (
     session.query(
@@ -450,11 +450,11 @@ arcpy.AddMessage(df_resultados_dept)
 arcpy.AddMessage(df_resultados_dept.columns)
 # Subir el DataFrame df_resultados a la base de datos
 df_resultados_dept.to_sql(name='TCP_DEPARTAMENTO', con=engine, if_exists='replace', index=False, schema='siedco')
-"""
+arcpy.AddMessage(f"""
 ===========================================
 TCP MUNCIPIO PDET
 ===========================================
-"""
+""")
 # Subconsulta para CombinadoHistPolicia: Agrupar por año y primeros_5_dane, y sumar la cantidad
 subconsulta_policia_mun = (
     session.query(
@@ -533,11 +533,11 @@ arcpy.AddMessage(df_resultados_mun.columns)
 
 df_resultados_mun.to_sql(name='TCP_CATEGORIA_PDET', con=engine, if_exists='replace', index=False, schema='siedco')
 
-"""
+arcpy.AddMessage(f"""
 ===========================================
 HOMICIDIOS_Variables_POLICIA
 ===========================================
-"""
+""")
 consulta_policia = (
     session.query(
         CombinadoHistPolicia.departamento,
@@ -583,7 +583,7 @@ arcpy.AddMessage(df_resultados_policia.columns)
 
 df_resultados_policia.to_sql(name='HOMICIDIOS_Variables_POLICIA', con=engine, if_exists='replace', index=False, schema='siedco')
 
-arcpy.management.DeleteRows(
+"""arcpy.management.DeleteRows(
     in_rows="https://geoapps.esri.co/server/rest/services/Hosted/HOMICIDIOS_Variables_POLICIA2/FeatureServer/0"
 )
 
@@ -594,13 +594,13 @@ target_fc = 'https://geoapps.esri.co/server/rest/services/Hosted/HOMICIDIOS_Vari
 dsc = arcpy.Describe(target_fc)
 fields = dsc.fields
 fieldnames = [field.name for field in fields]
-arcpy.AddMessage(fieldnames)
+#arcpy.AddMessage(fieldnames)
 
 
 # Convierte las fechas a formato datetime y ajusta la zona horaria
 df_resultados_policia['fecha_hecho'] = pd.to_datetime(df_resultados_policia['fecha_hecho'], errors='coerce')
 df_resultados_policia['fecha_hecho'] += pd.Timedelta(hours=6)
-arcpy.AddMessage(df_resultados_policia['fecha_hecho'])
+#arcpy.AddMessage(df_resultados_policia['fecha_hecho'])
 # Define el nuevo orden de las columnas
 nuevo_orden_columnas = ['departamento', 'municipio', 'armas_medios', 'genero', 
                         'f_agrupa_edad_persona', 'cantidad', 'primeros_5_dane', 'ano_fecha_hecho', 
@@ -661,7 +661,7 @@ while len(lista_de_tuplas):
             arcpy.AddMessage(f"Error during batch insertion: {e}")
             # Rompe el bucle en caso de un error no manejado
             break
-
+"""
 arcpy.AddMessage('TERMINO')
 
 session.close()
